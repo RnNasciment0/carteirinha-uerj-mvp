@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+// Importamos o cérebro do app para pegar os dados do usuário logado
+import '../../../core/app_data.dart';
 import '../../id_card/screens/id_card_screen.dart';
 import '../../payment/screens/pagar_screen.dart';
-// NOVO IMPORT DA TELA DE EXTRATO AQUI:
 import 'extrato_screen.dart';
+// Importamos a tela de login para podermos fazer o Logout
+import '../../login/screens/login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -41,7 +44,77 @@ class HomeScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
-      drawer: const Drawer(),
+
+      // --- O NOVO MENU LATERAL (DRAWER) ---
+      drawer: Drawer(
+        backgroundColor: Colors.white,
+        child: ListView(
+          padding: EdgeInsets.zero, // Tira a margem padrão para o cabeçalho encostar no topo
+          children: [
+            // Cabeçalho nativo do Flutter para perfis de usuário
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(
+                color: AppColors.azulUerj, // Fundo azul UERJ
+              ),
+              accountName: Text(
+                  AppData.instance.nomeAluno,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+              ),
+              accountEmail: Text('Matrícula: ${AppData.instance.matricula}'),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                // Puxa a foto dinâmica (sua ou do outro perfil)
+                backgroundImage: AssetImage(AppData.instance.foto),
+              ),
+            ),
+
+            // Itens do Menu (Por enquanto são visuais para o MVP)
+            ListTile(
+              leading: const Icon(Icons.person, color: AppColors.textoSecundario),
+              title: const Text('Meus Dados', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context); // Fecha a gaveta lateral
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Em breve: Edição de Perfil')));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month, color: AppColors.textoSecundario),
+              title: const Text('Grade de Horários', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Em breve: Integração com o Aluno Online')));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: AppColors.textoSecundario),
+              title: const Text('Configurações', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+
+            const Divider(height: 30, thickness: 1), // Linha divisória
+
+            // --- BOTÃO DE SAIR (LOGOUT) ---
+            ListTile(
+              leading: const Icon(Icons.exit_to_app, color: AppColors.vermelhoUerj),
+              title: const Text('Sair do Aplicativo', style: TextStyle(color: AppColors.vermelhoUerj, fontWeight: FontWeight.bold)),
+              onTap: () {
+                // A melhor prática para Logout no Flutter:
+                // Remove todo o histórico de navegação (para não dar para voltar com a seta do celular)
+                // E joga o usuário de volta para a tela de Login.
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (Route<dynamic> route) => false,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+
+      // O resto do corpo da tela (Os botões e a logo) continua igual!
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -62,7 +135,6 @@ class HomeScreen extends StatelessWidget {
                   ),
                   _buildMenuButton(
                       context, 'Saldo e\nExtrato', Icons.account_balance_wallet,
-                      // BOTÃO AGORA REDIRECIONA PARA A TELA DE EXTRATO:
                           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ExtratoScreen())),
                       AppColors.douradoUerj
                   ),
