@@ -86,8 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.account_balance, size: 100, color: AppColors.azulUerj),
-              const SizedBox(height: 20),
+              // --- ALTERAÇÃO AQUI: ÍCONE PELO LOGO ---
+              Image.asset(
+                'assets/images/uerj_logo.png', // Puxa a logo da UERJ
+                height: 120, // Altura maior para dar destaque
+                // errorBuilder: caso a imagem não carregue, mostra um ícone genérico
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.account_balance, size: 100, color: AppColors.azulUerj),
+              ),
+              const SizedBox(height: 30), // Mais espaço abaixo da logo
               const Text('Acesso Aluno UERJ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.azulUerj)),
               const SizedBox(height: 40),
 
@@ -95,10 +101,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _matriculaController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Matrícula', 
-                  prefixIcon: const Icon(Icons.badge, color: AppColors.azulUerj), 
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), 
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.azulUerj, width: 2))
+                    labelText: 'Matrícula',
+                    prefixIcon: const Icon(Icons.badge, color: AppColors.azulUerj),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.azulUerj, width: 2))
                 ),
               ),
               const SizedBox(height: 16),
@@ -107,15 +113,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _senhaController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Senha do Aluno Online', 
-                  prefixIcon: const Icon(Icons.lock, color: AppColors.azulUerj), 
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), 
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.azulUerj, width: 2))
+                    labelText: 'Senha do Aluno Online',
+                    prefixIcon: const Icon(Icons.lock, color: AppColors.azulUerj),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.azulUerj, width: 2))
                 ),
               ),
               const SizedBox(height: 10),
 
               if (_mensagemErro.isNotEmpty)
+              // --- ALTERAÇÃO AQUI: TEXTO DE ERRO CENTRALIZADO ---
                 Text(_mensagemErro, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
 
               const SizedBox(height: 24),
@@ -151,16 +158,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 40),
               Container(
-                padding: const EdgeInsets.all(12), 
-                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)), 
-                child: const Column(
-                  children: [
-                    Text('Matrículas para teste do MVP:', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoSecundario)), 
-                    SizedBox(height: 5), 
-                    Text('202520401811 (Não Cotista)', style: TextStyle(color: AppColors.textoSecundario)), 
-                    Text('12345 (Cotista)', style: TextStyle(color: AppColors.textoSecundario))
-                  ]
-                )
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+                  child: const Column(
+                      children: [
+                        Text('Matrículas para teste do MVP:', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoSecundario)),
+                        SizedBox(height: 5),
+                        Text('202520401811 (Não Cotista)', style: TextStyle(color: AppColors.textoSecundario)),
+                        Text('12345 (Cotista)', style: TextStyle(color: AppColors.textoSecundario))
+                      ]
+                  )
               )
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_colors.dart';
 import 'features/login/screens/login_screen.dart';
+import 'features/login/screens/splash_screen.dart';
 
 void main() {
   runApp(const MeuAppUerj());
@@ -20,7 +21,7 @@ class MeuAppUerj extends StatelessWidget {
         useMaterial3: true,
       ),
       // A primeira tela agora é a de Login!
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }
