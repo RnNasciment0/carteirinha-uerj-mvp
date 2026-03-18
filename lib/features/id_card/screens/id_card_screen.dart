@@ -1,56 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+// Importamos o pacote de código de barras
+import 'package:barcode_widget/barcode_widget.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/mock_user.dart';
 
-// Mudamos para StatefulWidget porque a tela agora tem "estado" (o cronômetro mudando)
-class IdCardScreen extends StatefulWidget {
+class IdCardScreen extends StatelessWidget {
   const IdCardScreen({super.key});
-
-  @override
-  State<IdCardScreen> createState() => _IdCardScreenState();
-}
-
-class _IdCardScreenState extends State<IdCardScreen> {
-  int tempoRestante = 30;
-  late Timer _timer;
-  String dadosQrCode = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _gerarNovoQrCode();
-    _iniciarTimer();
-  }
-
-  // Função para criar a lógica do cronômetro
-  void _iniciarTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (tempoRestante > 0) {
-          tempoRestante--;
-        } else {
-          tempoRestante = 30;
-          _gerarNovoQrCode(); // Atualiza o QR Code quando zera
-        }
-      });
-    });
-  }
-
-  // Função que simula o dado criptografado que a catraca vai ler
-  void _gerarNovoQrCode() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    // O QR Code vai conter a matrícula + um código de tempo único
-    dadosQrCode = "${simularEstudante.ID}_$timestamp";
-  }
-
-  // É muito importante cancelar o timer quando sair da tela para não gastar bateria
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,23 +13,25 @@ class _IdCardScreenState extends State<IdCardScreen> {
       backgroundColor: AppColors.corFundo,
       appBar: AppBar(
         backgroundColor: AppColors.azulUerj,
-        title: const Text('Carteirinha Digital UERJ', style: TextStyle(color: Colors.white)),
+        title: const Text('Carteirinha Digital UERJ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Container(
             width: double.infinity,
-            height: 520, // Aumentei um pouquinho a altura para caber o QR Code real
+            height: 520,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 7),
                 ),
               ],
             ),
@@ -82,38 +39,42 @@ class _IdCardScreenState extends State<IdCardScreen> {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: const BoxDecoration(
                     color: AppColors.azulUerj,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: const Text(
                     'UNIVERSIDADE DO ESTADO DO RIO DE JANEIRO',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 25),
 
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 25),
                     Container(
                       width: 100,
                       height: 130,
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Colors.grey[100],
                         border: Border.all(color: AppColors.douradoUerj, width: 3),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Image.asset(
-                        simularEstudante.foto,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.person, size: 60, color: Colors.grey),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: Image.asset(
+                          simularEstudante.foto,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.person, size: 60, color: Colors.grey),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,25 +82,27 @@ class _IdCardScreenState extends State<IdCardScreen> {
                           Text(
                             simularEstudante.name,
                             style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: 19,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textoPrimario),
+                                color: AppColors.textoPrimario,
+                                height: 1.1
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           Text(
                             'Matrícula: ${simularEstudante.ID}',
-                            style: const TextStyle(color: AppColors.textoSecundario),
+                            style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 5),
                           Text(
                             'Curso: ${simularEstudante.curso}',
-                            style: const TextStyle(color: AppColors.textoSecundario),
+                            style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 15),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                             decoration: BoxDecoration(
-                              color: Colors.green,
+                              color: Colors.green[600],
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -153,43 +116,45 @@ class _IdCardScreenState extends State<IdCardScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 15),
                   ],
                 ),
                 const Spacer(),
 
-                // --- NOVA ÁREA DO QR CODE FUNCIONAL ---
-                Column(
-                  children: [
-                    const Text(
-                        'Código de Acesso (Bandejão / Catraca)',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoPrimario)
-                    ),
-                    const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                          'Acesso à Biblioteca / Carteirinha',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textoPrimario,
+                              fontSize: 16
+                          )
+                      ),
+                      const SizedBox(height: 15),
 
-                    // O Widget que gera o QR Code real
-                    QrImageView(
-                      data: dadosQrCode, // O dado que vai dentro do QR Code
-                      version: QrVersions.auto,
-                      size: 130.0,
-                      foregroundColor: AppColors.textoPrimario,
-                    ),
+                      BarcodeWidget(
+                        barcode: Barcode.code128(),
+                        data: simularEstudante.ID,
+                        width: 280,
+                        height: 70,
+                        color: AppColors.textoPrimario,
+                        drawText: true,
+                        style: const TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold),
+                        errorBuilder: (context, error) => const Center(child: Text("Erro ao gerar")),
+                      ),
 
-                    const SizedBox(height: 5),
-
-                    // O texto que reage ao timer
-                    Text(
-                        'Atualiza em: ${tempoRestante}s',
-                        style: TextStyle(
-                          // Muda de cor quando está acabando o tempo
-                            color: tempoRestante <= 5 ? Colors.red : Colors.redAccent,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold
-                        )
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
