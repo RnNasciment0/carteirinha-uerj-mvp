@@ -66,4 +66,8 @@ class AppData {
       transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Bolsista)', valor: 0.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
     }
   }
+  void registrarRecarga(double valor){
+    saldo += valor;
+    transacoes.insert(0, Transacao(descricao: 'Recarga Pix (App)', valor: valor, data: DateTime.now(), ehSaida: false, icone: Icons.pix));
+  }
 }

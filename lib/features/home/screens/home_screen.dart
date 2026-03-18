@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-// Importamos o cérebro do app para pegar os dados do usuário logado
 import '../../../core/app_data.dart';
 import '../../id_card/screens/id_card_screen.dart';
 import '../../payment/screens/pagar_screen.dart';
 import 'extrato_screen.dart';
-// Importamos a tela de login para podermos fazer o Logout
 import '../../login/screens/login_screen.dart';
+import '../../payment/screens/recarga_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -139,7 +138,7 @@ class HomeScreen extends StatelessWidget {
                       AppColors.douradoUerj
                   ),
                   _buildMenuButton(
-                      context, 'Recarga\n(em breve)', Icons.pix, null, Colors.grey.shade400
+                      context, 'Recarga\nvia Pix', Icons.pix, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RecargaScreen())), Colors.teal
                   ),
                 ],
               ),
