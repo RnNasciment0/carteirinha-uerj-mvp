@@ -5,8 +5,10 @@ import '../../id_card/screens/id_card_screen.dart';
 import '../../payment/screens/pagar_screen.dart';
 import '../../payment/screens/recarga_screen.dart';
 import 'extrato_screen.dart';
-import 'notificacoes_screen.dart'; // Importação da nova tela
+import 'notificacoes_screen.dart';
 import '../../login/screens/login_screen.dart';
+import 'grade_horarios_screen.dart';
+import 'meus_dados_screen.dart';
 
 // Mudamos para StatefulWidget para o sininho atualizar quando lermos os avisos
 class HomeScreen extends StatefulWidget {
@@ -95,8 +97,24 @@ class _HomeScreenState extends State<HomeScreen> {
               accountEmail: Text('Matrícula: ${AppData.instance.matricula}'),
               currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, backgroundImage: AssetImage(AppData.instance.foto)),
             ),
-            ListTile(leading: const Icon(Icons.person, color: AppColors.textoSecundario), title: const Text('Meus Dados', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)), onTap: () { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Em breve: Edição de Perfil'))); }),
-            ListTile(leading: const Icon(Icons.calendar_month, color: AppColors.textoSecundario), title: const Text('Grade de Horários', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)), onTap: () { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Em breve: Integração com o Aluno Online'))); }),
+            // No bloco do Drawer, substitua os dois primeiros ListTiles por estes:
+
+            ListTile(
+                leading: const Icon(Icons.person, color: AppColors.textoSecundario),
+                title: const Text('Meus Dados', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context); // Fecha a gaveta
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MeusDadosScreen())); // Abre a tela
+                }
+            ),
+            ListTile(
+                leading: const Icon(Icons.calendar_month, color: AppColors.textoSecundario),
+                title: const Text('Grade de Horários', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context); // Fecha a gaveta
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const GradeHorariosScreen())); // Abre a tela
+                }
+            ),
             ListTile(leading: const Icon(Icons.settings, color: AppColors.textoSecundario), title: const Text('Configurações', style: TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold)), onTap: () { Navigator.pop(context); }),
             const Divider(height: 30, thickness: 1),
             ListTile(leading: const Icon(Icons.exit_to_app, color: AppColors.vermelhoUerj), title: const Text('Sair do Aplicativo', style: TextStyle(color: AppColors.vermelhoUerj, fontWeight: FontWeight.bold)), onTap: () { Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (Route<dynamic> route) => false); }),
