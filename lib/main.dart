@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import 'core/theme/app_colors.dart';
-import 'features/login/screens/login_screen.dart';
+import 'core/app_data.dart'; // Importação do AppData
 import 'features/login/screens/splash_screen.dart';
 
-void main() {
+// Transformamos a função main em Assíncrona (Future)
+void main() async {
+  // 1. Garante que o Flutter esteja totalmente inicializado nativamente
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Chama a função init do nosso cérebro para carregar o Shared Preferences do disco
+  await AppData.instance.init();
+
+  // 3. Só então abre o aplicativo
   runApp(const MeuAppUerj());
 }
 
@@ -13,14 +20,12 @@ class MeuAppUerj extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MVP Carteirinha UERJ',
+      title: 'Carteirinha Digital UERJ',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: AppColors.azulUerj,
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.azulUerj),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0072CE)),
         useMaterial3: true,
       ),
-      // A primeira tela agora é a de Login!
       home: const SplashScreen(),
     );
   }
