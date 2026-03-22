@@ -95,9 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: const BoxDecoration(color: AppColors.azulUerj),
               accountName: Text(AppData.instance.nomeAluno, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               accountEmail: Text('Matrícula: ${AppData.instance.matricula}'),
-              currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, backgroundImage: AssetImage(AppData.instance.foto)),
+              currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, backgroundImage: AppData.instance.provedorFoto),
             ),
-            // No bloco do Drawer, substitua os dois primeiros ListTiles por estes:
 
             ListTile(
                 leading: const Icon(Icons.person, color: AppColors.textoSecundario),

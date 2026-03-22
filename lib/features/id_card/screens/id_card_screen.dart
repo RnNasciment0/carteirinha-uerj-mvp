@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'dart:math' as math;
 import '../../../core/theme/app_colors.dart';
-import '../../../core/app_data.dart'; // Importação corrigida
+import '../../../core/app_data.dart';
 
 class IdCardScreen extends StatefulWidget {
   const IdCardScreen({super.key});
@@ -55,70 +55,96 @@ class _IdCardScreenState extends State<IdCardScreen> {
     return Container(
       width: double.infinity, height: 520,
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 7))],),
-      child: Column(
+      child: Stack(
         children: [
-          Container(
-            width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 18),
-            decoration: const BoxDecoration(color: AppColors.azulUerj, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-            child: const Text('UNIVERSIDADE DO ESTADO DO RIO DE JANEIRO', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
-          ),
-          const SizedBox(height: 25),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(width: 25),
-              Container(
-                width: 100, height: 130,
-                decoration: BoxDecoration(color: Colors.grey[100], border: Border.all(color: AppColors.douradoUerj, width: 3), borderRadius: BorderRadius.circular(8)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  // Variável corrigida: AppData.instance.foto
-                  child: Image.asset(AppData.instance.foto, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 60, color: Colors.grey)),
-                ),
+          // --- NOVO: MARCA D'ÁGUA DA UERJ NO FUNDO ---
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.center,
+              child: Opacity(
+                opacity: 0.04, // Bem transparente para não atrapalhar a leitura
+                child: Image.asset('assets/images/uerj_logo.png', width: 250, errorBuilder: (context, error, stackTrace) => const SizedBox()),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Variáveis corrigidas abaixo
-                    Text(AppData.instance.nomeAluno, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: AppColors.textoPrimario, height: 1.1)),
-                    const SizedBox(height: 10),
-                    Text('Matrícula: ${AppData.instance.matricula}', style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14)),
-                    const SizedBox(height: 5),
-                    Text('Curso: ${AppData.instance.curso}', style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14)),
-                    const SizedBox(height: 15),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(color: Colors.green[600], borderRadius: BorderRadius.circular(20)),
-                      child: Text(AppData.instance.status, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
+          ),
+
+          // CONTEÚDO ORIGINAL
+          Column(
+            children: [
+              // --- NOVO: CABEÇALHO DEGRADÊ COM LINHA DOURADA ---
+              Container(
+                width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.azulUerj, Color(0xFF004D8C)], // Azul UERJ escurecendo
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
                     ),
+                    border: Border(bottom: BorderSide(color: AppColors.douradoUerj, width: 4)), // Linha Dourada
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+                ),
+                child: const Text('UNIVERSIDADE DO ESTADO DO RIO DE JANEIRO', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 25),
+                  Container(
+                    width: 100, height: 130,
+                    decoration: BoxDecoration(color: Colors.grey[100], border: Border.all(color: AppColors.douradoUerj, width: 3), borderRadius: BorderRadius.circular(8)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: Image(
+                          image: AppData.instance.provedorFoto,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 60, color: Colors.grey)
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(AppData.instance.nomeAluno, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: AppColors.textoPrimario, height: 1.1)),
+                        const SizedBox(height: 10),
+                        Text('Matrícula: ${AppData.instance.matricula}', style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14)),
+                        const SizedBox(height: 5),
+                        Text('Curso: ${AppData.instance.curso}', style: const TextStyle(color: AppColors.textoSecundario, fontSize: 14)),
+                        const SizedBox(height: 15),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(color: Colors.green[600], borderRadius: BorderRadius.circular(20)),
+                          child: Text(AppData.instance.status, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+                width: double.infinity,
+                // Leve tom de azul bem clarinho no fundo do código de barras
+                decoration: BoxDecoration(color: AppColors.azulUerj.withOpacity(0.03), borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20))),
+                child: Column(
+                  children: [
+                    const Text('Acesso à Biblioteca / Carteirinha', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoPrimario, fontSize: 16)),
+                    const SizedBox(height: 15),
+                    BarcodeWidget(
+                      barcode: Barcode.code128(),
+                      data: AppData.instance.matricula,
+                      width: 280, height: 70, color: AppColors.textoPrimario, drawText: true,
+                      style: const TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold),
+                      errorBuilder: (context, error) => const Center(child: Text("Erro ao gerar")),
+                    ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
-              const SizedBox(width: 15),
             ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
-            width: double.infinity,
-            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20))),
-            child: Column(
-              children: [
-                const Text('Acesso à Biblioteca / Carteirinha', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoPrimario, fontSize: 16)),
-                const SizedBox(height: 15),
-                BarcodeWidget(
-                  barcode: Barcode.code128(),
-                  // Variável corrigida
-                  data: AppData.instance.matricula,
-                  width: 280, height: 70, color: AppColors.textoPrimario, drawText: true,
-                  style: const TextStyle(color: AppColors.textoPrimario, fontWeight: FontWeight.bold),
-                  errorBuilder: (context, error) => const Center(child: Text("Erro ao gerar")),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
           ),
         ],
       ),
@@ -132,24 +158,59 @@ class _IdCardScreenState extends State<IdCardScreen> {
       child: Container(
         width: double.infinity, height: 520,
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 7))]),
-        child: Column(
+        child: Stack(
           children: [
-            Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 18), decoration: const BoxDecoration(color: AppColors.azulUerj, borderRadius: BorderRadius.vertical(top: Radius.circular(20))), child: const Text('DADOS PESSOAIS / VALIDADE', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5))),
-            Padding(
-              padding: const EdgeInsets.all(25.0),
-              child: Column(
-                children: [
-                  _buildDadoLinha('Nasc.:', '15/05/2000'),
-                  _buildDadoLinha('RG:', '12.345.678-9'),
-                  _buildDadoLinha('CPF:', '123.456.789-00'),
-                  const Divider(height: 40, color: AppColors.douradoUerj, thickness: 1),
-                  _buildDadoLinha('Emissão:', '10/01/2024'),
-                  _buildDadoLinha('Validade:', '31/12/2026', ehDestaque: true),
-                ],
+            // --- NOVO: MARCA D'ÁGUA NO VERSO TAMBÉM ---
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.center,
+                child: Opacity(
+                  opacity: 0.04,
+                  child: Image.asset('assets/images/uerj_logo.png', width: 250, errorBuilder: (context, error, stackTrace) => const SizedBox()),
+                ),
               ),
             ),
-            const Spacer(),
-            Container(padding: const EdgeInsets.all(20), width: double.infinity, decoration: BoxDecoration(color: Colors.grey[100], borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20))), child: Column(children: [Text('Toque no cartão para voltar', style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 14)), const SizedBox(height: 10), const Icon(Icons.account_balance, color: AppColors.azulUerj, size: 40)])),
+
+            // CONTEÚDO ORIGINAL DO VERSO
+            Column(
+              children: [
+                // --- CABEÇALHO DO VERSO COM O MESMO DEGRADÊ ---
+                Container(
+                    width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: const BoxDecoration(
+                        gradient: LinearGradient(colors: [AppColors.azulUerj, Color(0xFF004D8C)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                        border: Border(bottom: BorderSide(color: AppColors.douradoUerj, width: 4)),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+                    ),
+                    child: const Text('DADOS PESSOAIS / VALIDADE', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5))
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(25.0),
+                  child: Column(
+                    children: [
+                      _buildDadoLinha('Nasc.:', '15/05/2000'),
+                      _buildDadoLinha('RG:', '12.345.678-9'),
+                      _buildDadoLinha('CPF:', '123.456.789-00'),
+                      const Divider(height: 40, color: AppColors.douradoUerj, thickness: 1),
+                      _buildDadoLinha('Emissão:', '10/01/2024'),
+                      _buildDadoLinha('Validade:', '31/12/2026', ehDestaque: true),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                    padding: const EdgeInsets.all(20), width: double.infinity,
+                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20))),
+                    child: Column(
+                        children: [
+                          Text('Toque no cartão para voltar', style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 14)),
+                          const SizedBox(height: 10),
+                          const Icon(Icons.account_balance, color: AppColors.azulUerj, size: 40)
+                        ]
+                    )
+                ),
+              ],
+            ),
           ],
         ),
       ),

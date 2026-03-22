@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importação do pacote
 import 'dart:convert'; // Importação nativa para lidar com JSON
+import 'dart:io';
 
 // --- MODELO: TRANSAÇÃO (Turbinado com JSON) ---
 class Transacao {
@@ -64,25 +65,34 @@ class Notificacao {
   );
 }
 
-// --- CÉREBRO: APP DATA (Turbinado com Persistência) ---
 class AppData {
+  ImageProvider get provedorFoto {
+    if (caminhoFotoCustomizada != null && caminhoFotoCustomizada!.isNotEmpty) {
+      return FileImage(File(caminhoFotoCustomizada!));
+    }
+    return AssetImage(foto);
+  }
+
+  void atualizarFoto(String novoCaminho) {
+    caminhoFotoCustomizada = novoCaminho;
+    _salvarDadosNoDisco();
+  }
   AppData._();
   static final AppData instance = AppData._();
 
-  // Instância do Shared Preferences (será carregada no boot do app)
   SharedPreferences? _prefs;
 
-  // CHAVES para gravar os dados (como se fossem nomes de pastas)
   static const String keySaldo = 'uerj_saldo';
   static const String keyTransacoes = 'uerj_transacoes';
   static const String keyNotificacoes = 'uerj_notificacoes';
+  static const String keyFoto = 'uerj_foto_perfil';
 
-  // Dados do Aluno (Fixos no login para o MVP)
   String nomeAluno = '';
   String matricula = '';
   String curso = '';
   String status = 'ATIVO';
   String foto = 'assets/images/profile_placeholder.png';
+  String? caminhoFotoCustomizada;
   bool isCotista = false;
 
   // Dados Dinâmicos (Que vamos salvar no disco!)
@@ -93,13 +103,8 @@ class AppData {
   static const String matriculaRenan = '202520401811';
   static const String matriculaMaria = '12345';
 
-  // --- NOVA FUNÇÃO MÁGICA DE INICIALIZAÇÃO (Boot do App) ---
-  // Ela será chamada no main.dart ANTES do app abrir
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    // Neste momento, o app está apenas fixando os dados do login.
-    // O saldo e histórico são resetados se não houver login persistente.
-    // Para um MVP mais complexo, poderíamos salvar qual usuário está logado.
   }
 
   bool realizarLogin(String matriculaDigitada) {
@@ -128,27 +133,22 @@ class AppData {
   void _carregarDadosPersistidos(double saldoInicialMock) {
     if (_prefs == null) return;
 
-    // 1. Carrega o Saldo (Se não houver nada gravado, usa o valor mock)
     saldo = _prefs!.getDouble(keySaldo) ?? saldoInicialMock;
+    caminhoFotoCustomizada = _prefs!.getString(keyFoto);
 
-    // 2. Carrega Transações (Complexo!)
     String? transacoesJson = _prefs!.getString(keyTransacoes);
     if (transacoesJson != null) {
-      // Decodifica o texto JSON em uma lista genérica
       List<dynamic> listRaw = jsonDecode(transacoesJson);
-      // Transforma a lista genérica em uma Lista de Objetos Transacao reais
       transacoes = listRaw.map((item) => Transacao.fromJson(item)).toList();
     } else {
-      transacoes = []; // Se não houver histórico gravado, começa vazio
+      transacoes = [];
     }
 
-    // 3. Carrega Notificações (Complexo!)
     String? notificacoesJson = _prefs!.getString(keyNotificacoes);
     if (notificacoesJson != null) {
       List<dynamic> listRaw = jsonDecode(notificacoesJson);
       notificacoes = listRaw.map((item) => Notificacao.fromJson(item)).toList();
     } else {
-      // Se for a primeira vez, carrega as notificações padrão da UERJ
       _carregarNotificacoesPadrao();
       _salvarDadosNoDisco(); // Já grava as padrão no disco
     }
@@ -161,23 +161,18 @@ class AppData {
     ];
   }
 
-  // --- FUNÇÃO CENTRAL DE GRAVAR DADOS NO DISCO (Shared Preferences) ---
-  // Toda vez que mudarmos saldo ou histórico, chamamos essa função!
   Future<void> _salvarDadosNoDisco() async {
     if (_prefs == null) return;
 
-    // 1. Grava Saldo (Número simples, é fácil)
+    if (caminhoFotoCustomizada != null) {
+      await _prefs!.setString(keyFoto, caminhoFotoCustomizada!);
+    }
     await _prefs!.setDouble(keySaldo, saldo);
 
-    // 2. Grava Transações (Complexo!)
-    // Transforma a Lista de Objetos em uma Lista de textos (JSON Maps)
     List<Map<String, dynamic>> transacoesMap = transacoes.map((t) => t.toJson()).toList();
-    // Transforma a lista de textos em uma única String JSON gigante
     String transacoesJson = jsonEncode(transacoesMap);
-    // Grava a String no disco
     await _prefs!.setString(keyTransacoes, transacoesJson);
 
-    // 3. Grava Notificações (Complexo!)
     List<Map<String, dynamic>> notificacoesMap = notificacoes.map((n) => n.toJson()).toList();
     String notificacoesJson = jsonEncode(notificacoesMap);
     await _prefs!.setString(keyNotificacoes, notificacoesJson);
@@ -187,7 +182,7 @@ class AppData {
 
   void marcarTodasComoLidas() {
     for (var n in notificacoes) { n.lida = true; }
-    _salvarDadosNoDisco(); // Mudou status da notificação -> Grava no disco!
+    _salvarDadosNoDisco();
   }
 
   void registrarPagamento() {
