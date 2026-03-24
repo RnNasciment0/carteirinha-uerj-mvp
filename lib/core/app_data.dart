@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Importação do pacote
-import 'dart:convert'; // Importação nativa para lidar com JSON
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'dart:io';
 
-// --- MODELO: TRANSAÇÃO (Turbinado com JSON) ---
 class Transacao {
   final String descricao;
   final double valor;
@@ -13,27 +12,23 @@ class Transacao {
 
   Transacao({required this.descricao, required this.valor, required this.data, required this.ehSaida, required this.icone});
 
-  // TRANSFORMA O OBJETO EM TEXTO (JSON) PARA GRAVAR
   Map<String, dynamic> toJson() => {
     'descricao': descricao,
     'valor': valor,
-    'data': data.toIso8601String(), // Grava data como texto formatado
+    'data': data.toIso8601String(),
     'ehSaida': ehSaida,
-    'icone_code': icone.codePoint, // Grava o código do ícone
+    'icone_code': icone.codePoint,
   };
 
-  // TRANSFORMA O TEXTO (JSON) LIDO DO DISCO EM OBJETO DART
   factory Transacao.fromJson(Map<String, dynamic> json) => Transacao(
     descricao: json['descricao'],
     valor: json['valor'],
-    data: DateTime.parse(json['data']), // Lê texto e transforma em Data
+    data: DateTime.parse(json['data']),
     ehSaida: json['ehSaida'],
-    // Recria o ícone usando o código gravado (padrão Material Icons)
     icone: IconData(json['icone_code'], fontFamily: 'MaterialIcons'),
   );
 }
 
-// --- MODELO: NOTIFICAÇÃO (Turbinado com JSON) ---
 class Notificacao {
   final String titulo;
   final String mensagem;
@@ -44,44 +39,32 @@ class Notificacao {
 
   Notificacao({required this.titulo, required this.mensagem, required this.data, this.lida = false, required this.icone, required this.corIcone});
 
-  // TRANSFORMA O OBJETO EM TEXTO (JSON) PARA GRAVAR
   Map<String, dynamic> toJson() => {
     'titulo': titulo,
     'mensagem': mensagem,
     'data': data.toIso8601String(),
     'lida': lida,
     'icone_code': icone.codePoint,
-    'corIcone_value': corIcone.value, // Grava o valor numérico da cor
+    'corIcone_value': corIcone.value,
   };
 
-  // TRANSFORMA O TEXTO (JSON) LIDO DO DISCO EM OBJETO DART
   factory Notificacao.fromJson(Map<String, dynamic> json) => Notificacao(
     titulo: json['titulo'],
     mensagem: json['mensagem'],
     data: DateTime.parse(json['data']),
     lida: json['lida'],
     icone: IconData(json['icone_code'], fontFamily: 'MaterialIcons'),
-    corIcone: Color(json['corIcone_value']), // Recria a cor usando o valor numérico
+    corIcone: Color(json['corIcone_value']),
   );
 }
 
 class AppData {
-  ImageProvider get provedorFoto {
-    if (caminhoFotoCustomizada != null && caminhoFotoCustomizada!.isNotEmpty) {
-      return FileImage(File(caminhoFotoCustomizada!));
-    }
-    return AssetImage(foto);
-  }
-
-  void atualizarFoto(String novoCaminho) {
-    caminhoFotoCustomizada = novoCaminho;
-    _salvarDadosNoDisco();
-  }
   AppData._();
   static final AppData instance = AppData._();
 
   SharedPreferences? _prefs;
 
+  // CHAVES BASE
   static const String keySaldo = 'uerj_saldo';
   static const String keyTransacoes = 'uerj_transacoes';
   static const String keyNotificacoes = 'uerj_notificacoes';
@@ -95,7 +78,6 @@ class AppData {
   String? caminhoFotoCustomizada;
   bool isCotista = false;
 
-  // Dados Dinâmicos (Que vamos salvar no disco!)
   double saldo = 0.0;
   List<Transacao> transacoes = [];
   List<Notificacao> notificacoes = [];
@@ -108,13 +90,15 @@ class AppData {
   }
 
   bool realizarLogin(String matriculaDigitada) {
+    // --- CORREÇÃO 1: LIMPA A FOTO DA MEMÓRIA ANTES DE CARREGAR O NOVO USUÁRIO ---
+    caminhoFotoCustomizada = null;
+
     if (matriculaDigitada == matriculaRenan) {
       nomeAluno = 'Renan Souza do Nascimento';
       matricula = matriculaRenan;
       curso = 'Ciência da Computação';
       isCotista = false;
-
-      _carregarDadosPersistidos(15.50); // Tenta ler o saldo do disco, se não houver usa 15.50
+      _carregarDadosPersistidos(15.50);
       return true;
 
     } else if (matriculaDigitada == matriculaMaria) {
@@ -122,21 +106,21 @@ class AppData {
       matricula = matriculaMaria;
       curso = 'Direito';
       isCotista = true;
-
-      _carregarDadosPersistidos(0.00); // Tenta ler do disco, senão 0.00
+      _carregarDadosPersistidos(0.00);
       return true;
     }
     return false;
   }
 
-  // --- FUNÇÃO DE CARREGAR DADOS DO DISCO ---
   void _carregarDadosPersistidos(double saldoInicialMock) {
     if (_prefs == null) return;
 
-    saldo = _prefs!.getDouble(keySaldo) ?? saldoInicialMock;
-    caminhoFotoCustomizada = _prefs!.getString(keyFoto);
+    // --- CORREÇÃO 2: USA A MATRÍCULA NO FINAL DA CHAVE PARA ISOLAR OS DADOS ---
+    caminhoFotoCustomizada = _prefs!.getString('${keyFoto}_$matricula');
 
-    String? transacoesJson = _prefs!.getString(keyTransacoes);
+    saldo = _prefs!.getDouble('${keySaldo}_$matricula') ?? saldoInicialMock;
+
+    String? transacoesJson = _prefs!.getString('${keyTransacoes}_$matricula');
     if (transacoesJson != null) {
       List<dynamic> listRaw = jsonDecode(transacoesJson);
       transacoes = listRaw.map((item) => Transacao.fromJson(item)).toList();
@@ -144,13 +128,13 @@ class AppData {
       transacoes = [];
     }
 
-    String? notificacoesJson = _prefs!.getString(keyNotificacoes);
+    String? notificacoesJson = _prefs!.getString('${keyNotificacoes}_$matricula');
     if (notificacoesJson != null) {
       List<dynamic> listRaw = jsonDecode(notificacoesJson);
       notificacoes = listRaw.map((item) => Notificacao.fromJson(item)).toList();
     } else {
       _carregarNotificacoesPadrao();
-      _salvarDadosNoDisco(); // Já grava as padrão no disco
+      _salvarDadosNoDisco();
     }
   }
 
@@ -164,18 +148,32 @@ class AppData {
   Future<void> _salvarDadosNoDisco() async {
     if (_prefs == null) return;
 
+    // --- CORREÇÃO 3: SALVA OS DADOS COM A CHAVE ESPECÍFICA DO USUÁRIO LOGADO ---
     if (caminhoFotoCustomizada != null) {
-      await _prefs!.setString(keyFoto, caminhoFotoCustomizada!);
+      await _prefs!.setString('${keyFoto}_$matricula', caminhoFotoCustomizada!);
+    } else {
+      await _prefs!.remove('${keyFoto}_$matricula'); // Remove se o usuário não tiver foto
     }
-    await _prefs!.setDouble(keySaldo, saldo);
+
+    await _prefs!.setDouble('${keySaldo}_$matricula', saldo);
 
     List<Map<String, dynamic>> transacoesMap = transacoes.map((t) => t.toJson()).toList();
-    String transacoesJson = jsonEncode(transacoesMap);
-    await _prefs!.setString(keyTransacoes, transacoesJson);
+    await _prefs!.setString('${keyTransacoes}_$matricula', jsonEncode(transacoesMap));
 
     List<Map<String, dynamic>> notificacoesMap = notificacoes.map((n) => n.toJson()).toList();
-    String notificacoesJson = jsonEncode(notificacoesMap);
-    await _prefs!.setString(keyNotificacoes, notificacoesJson);
+    await _prefs!.setString('${keyNotificacoes}_$matricula', jsonEncode(notificacoesMap));
+  }
+
+  ImageProvider get provedorFoto {
+    if (caminhoFotoCustomizada != null && caminhoFotoCustomizada!.isNotEmpty) {
+      return FileImage(File(caminhoFotoCustomizada!));
+    }
+    return AssetImage(foto);
+  }
+
+  void atualizarFoto(String novoCaminho) {
+    caminhoFotoCustomizada = novoCaminho;
+    _salvarDadosNoDisco();
   }
 
   int get qtdNotificacoesNaoLidas => notificacoes.where((n) => !n.lida).length;
@@ -189,10 +187,10 @@ class AppData {
     if (!isCotista) {
       saldo -= 2.00;
       transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Simulação)', valor: 2.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
-      _salvarDadosNoDisco(); // Mudou saldo/histórico -> Grava no disco!
+      _salvarDadosNoDisco();
     } else {
       transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Bolsista)', valor: 0.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
-      _salvarDadosNoDisco(); // Mudou histórico -> Grava no disco!
+      _salvarDadosNoDisco();
     }
   }
 
@@ -201,6 +199,6 @@ class AppData {
     transacoes.insert(0, Transacao(descricao: 'Recarga Pix (App)', valor: valor, data: DateTime.now(), ehSaida: false, icone: Icons.pix));
     notificacoes.insert(0, Notificacao(titulo: 'Nova Recarga', mensagem: 'Você adicionou R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')} à sua conta.', data: DateTime.now(), icone: Icons.account_balance_wallet, corIcone: Colors.green));
 
-    _salvarDadosNoDisco(); // Mudou tudo -> Grava no disco de uma vez!
+    _salvarDadosNoDisco();
   }
 }
