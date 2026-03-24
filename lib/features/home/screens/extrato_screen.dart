@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Pacote para formatar datas (já vem no Flutter)
 import '../../../core/theme/app_colors.dart';
-import '../../../core/app_data.dart'; // Nosso cérebro central
+import '../../../core/app_data.dart';
 
-class ExtratoScreen extends StatelessWidget {
+class ExtratoScreen extends StatefulWidget {
   const ExtratoScreen({super.key});
 
   @override
+  State<ExtratoScreen> createState() => _ExtratoScreenState();
+}
+
+class _ExtratoScreenState extends State<ExtratoScreen> {
+  // --- VARIÁVEL DO MODO PRIVACIDADE ---
+  bool _mostrarSaldo = true;
+
+  String _formatarData(DateTime data) {
+    return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')} às ${data.hour.toString().padLeft(2, '0')}:${data.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Pega os dados atuais do AppData
-    double saldoAtual = AppData.instance.saldo;
-    List<Transacao> transacoes = AppData.instance.transacoes;
-    DateFormat formatadorData = DateFormat('dd/MM, HH:mm'); // Formatador de data
+    final transacoes = AppData.instance.transacoes;
 
     return Scaffold(
       backgroundColor: AppColors.corFundo,
@@ -23,68 +31,93 @@ class ExtratoScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // --- CARTÃO DE SALDO NO TOPO (Estilo UERJ vibrante) ---
+          // --- CABEÇALHO DO SALDO (COM PRIVACIDADE) ---
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(30),
-            decoration: const BoxDecoration(
-              color: AppColors.azulUerj,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-            ),
+            color: AppColors.azulUerj,
+            padding: const EdgeInsets.only(bottom: 30, top: 20),
             child: Column(
               children: [
-                const Text('Seu Saldo Atual', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                const Text('Saldo Disponível', style: TextStyle(color: Colors.white70, fontSize: 16)),
                 const SizedBox(height: 10),
-                Text(
-                  'R\$ ${saldoAtual.toStringAsFixed(2).replaceAll('.', ',')}',
-                  style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Lógica para mostrar o valor real ou os pontinhos
+                    Text(
+                      _mostrarSaldo
+                          ? 'R\$ ${AppData.instance.saldo.toStringAsFixed(2).replaceAll('.', ',')}'
+                          : 'R\$ •••••',
+                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 10),
+                    // Botão do Olhinho
+                    IconButton(
+                      icon: Icon(
+                        _mostrarSaldo ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.white70,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _mostrarSaldo = !_mostrarSaldo; // Inverte o estado
+                        });
+                      },
+                    )
+                  ],
                 ),
-                if (AppData.instance.isCotista)
-                  const Text('(Acesso Gratuito Ativo)', style: TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          // --- TÍTULO DO HISTÓRICO ---
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.all(20.0),
             child: Row(
               children: [
                 Icon(Icons.history, color: AppColors.textoSecundario),
                 SizedBox(width: 10),
-                Text('Últimas Movimentações', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textoSecundario)),
+                Text('Histórico de Transações', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textoPrimario)),
               ],
             ),
           ),
-          const SizedBox(height: 10),
 
-          // --- LISTA HISTÓRICA DO EXTRATO ---
+          // --- LISTA DE TRANSAÇÕES OU ESTADO VAZIO (EMPTY STATE) ---
           Expanded(
             child: transacoes.isEmpty
-                ? const Center(child: Text('Nenhuma movimentação recente.'))
-                : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+                ? // SE A LISTA FOR VAZIA, MOSTRA ESTE BLOCO BONITO
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  const Text('Nenhuma transação encontrada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textoSecundario)),
+                  const SizedBox(height: 8),
+                  const Text('O seu histórico de recargas e\npagamentos aparecerá aqui.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            )
+                : // SE TIVER DADOS, DESENHA A LISTA NORMALMENTE
+            ListView.builder(
               itemCount: transacoes.length,
-              separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.grey), // Linha divisória
               itemBuilder: (context, index) {
-                final item = transacoes[index];
-
-                // Define a cor e o sinal (+ ou -) baseado no tipo
-                Color corValor = item.ehSaida ? AppColors.vermelhoUerj : Colors.green;
-                String sinal = item.ehSaida ? '-' : '+';
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: AppColors.azulUerj.withOpacity(0.05), shape: BoxShape.circle),
-                    child: Icon(item.icone, color: AppColors.azulUerj, size: 25),
-                  ),
-                  title: Text(item.descricao, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoPrimario, fontSize: 15)),
-                  subtitle: Text(formatadorData.format(item.data), style: const TextStyle(color: AppColors.textoSecundario, fontSize: 13)),
-                  trailing: Text(
-                    '$sinal R\$ ${item.valor.toStringAsFixed(2).replaceAll('.', ',')}',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: corValor),
+                final transacao = transacoes[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withOpacity(0.2))),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: CircleAvatar(
+                      backgroundColor: transacao.ehSaida ? AppColors.vermelhoUerj.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                      child: Icon(transacao.icone, color: transacao.ehSaida ? AppColors.vermelhoUerj : Colors.green),
+                    ),
+                    title: Text(transacao.descricao, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoPrimario)),
+                    subtitle: Text(_formatarData(transacao.data), style: const TextStyle(color: AppColors.textoSecundario, fontSize: 12)),
+                    trailing: Text(
+                      '${transacao.ehSaida ? '-' : '+'} R\$ ${transacao.valor.toStringAsFixed(2).replaceAll('.', ',')}',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: transacao.ehSaida ? AppColors.vermelhoUerj : Colors.green),
+                    ),
                   ),
                 );
               },
