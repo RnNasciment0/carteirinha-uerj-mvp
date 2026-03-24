@@ -196,14 +196,23 @@ class AppData {
     _salvarDadosNoDisco();
   }
 
-  void registrarPagamento() {
+  // --- CORREÇÃO: AGORA RETORNA TRUE (SUCESSO) OU FALSE (SALDO INSUFICIENTE) ---
+  bool registrarPagamento() {
     if (!isCotista) {
-      saldo -= 2.00;
-      transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Simulação)', valor: 2.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
-      _salvarDadosNoDisco();
+      // Verifica se o aluno tem pelo menos R$ 2,00
+      if (saldo >= 2.00) {
+        saldo -= 2.00;
+        transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão', valor: 2.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
+        _salvarDadosNoDisco();
+        return true; // Pagamento aprovado!
+      } else {
+        return false; // Pagamento negado por falta de saldo!
+      }
     } else {
+      // Bolsista/Cotista tem refeição subsidiada (R$ 0,00), então sempre aprova
       transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Bolsista)', valor: 0.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
       _salvarDadosNoDisco();
+      return true;
     }
   }
 

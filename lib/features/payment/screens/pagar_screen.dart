@@ -1,9 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_colors.dart';
-// IMPORTAMOS O NOVO APP_DATA
 import '../../../core/app_data.dart';
+import 'recarga_screen.dart'; // Importamos a tela de recarga
 
 class PagarScreen extends StatefulWidget {
   const PagarScreen({super.key});
@@ -13,124 +11,111 @@ class PagarScreen extends StatefulWidget {
 }
 
 class _PagarScreenState extends State<PagarScreen> {
-  int tempoRestante = 30;
-  late Timer _timer;
-  String dadosQrCode = "";
-  bool _pagamentoAprovado = false;
+  bool _processando = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _gerarNovoQrCode();
-    _iniciarTimer();
-  }
+  void _simularPagamento() async {
+    setState(() { _processando = true; });
 
-  void _iniciarTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!_pagamentoAprovado) {
-        setState(() {
-          if (tempoRestante > 0) { tempoRestante--; } else { tempoRestante = 30; _gerarNovoQrCode(); }
-        });
-      }
-    });
-  }
+    // Simula o tempo de leitura da catraca do bandejão (1.5 segundos)
+    await Future.delayed(const Duration(milliseconds: 1500));
 
-  void _gerarNovoQrCode() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    // Pega a matrícula do AppData central
-    dadosQrCode = "PAGAMENTO_${AppData.instance.matricula}_$timestamp";
-  }
+    if (!mounted) return;
 
-  // --- A MÁGICA CONECTADA AO EXTRATO ---
-  void _simularPagamentoNfc() {
-    if (_pagamentoAprovado) return;
+    // --- A MÁGICA DA VERIFICAÇÃO AQUI ---
+    // Tentamos pagar. O cérebro responde se deu certo ou não.
+    bool sucesso = AppData.instance.registrarPagamento();
 
-    // Verifica saldo usando AppData central
-    if (!AppData.instance.isCotista && AppData.instance.saldo < 2.00) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saldo insuficiente!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
-      return;
+    setState(() { _processando = false; });
+
+    if (sucesso) {
+      // Se aprovou, mostra a mensagem verde e volta pra Home
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pagamento aprovado! Bom apetite.'), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context); // Fecha a tela de pagamento
+    } else {
+      // Se reprovou, mostra o modal de Saldo Insuficiente
+      _mostrarAlertaSaldoInsuficiente();
     }
-
-    // AVISA AO CÉREBRO QUE O PAGAMENTO OCORREU (Atualiza saldo e lista de extrato)
-    AppData.instance.registrarPagamento();
-
-    setState(() {
-      _pagamentoAprovado = true; // Mostra tela de sucesso localmente
-    });
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) { setState(() { _pagamentoAprovado = false; tempoRestante = 30; _gerarNovoQrCode(); }); }
-    });
   }
 
-  @override
-  void dispose() { _timer.cancel(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    // Pega os dados do AppData central
-    bool isCotista = AppData.instance.isCotista;
-    double saldoAtual = AppData.instance.saldo;
-
-    String mensagemPagamento = isCotista ? "Acesso Gratuito (Bolsista/Cotista)" : "Valor da Refeição: R\$ 2,00";
-    Color corMensagem = isCotista ? Colors.green : AppColors.azulUerj;
-
-    return Scaffold(
-      backgroundColor: AppColors.corFundo,
-      appBar: AppBar(backgroundColor: AppColors.azulUerj, title: const Text('Acesso ao Bandejão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), iconTheme: const IconThemeData(color: Colors.white), elevation: 0,),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            width: double.infinity, padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              child: _pagamentoAprovado ? _buildTelaSucesso() : _buildTelaPagamento(mensagemPagamento, corMensagem, saldoAtual, isCotista),
-            ),
-          ),
+  // Modal (Pop-up) amigável de erro
+  void _mostrarAlertaSaldoInsuficiente() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 10),
+              Text('Saldo Insuficiente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18))
+            ]
         ),
+        content: const Text('Você não tem saldo suficiente para pagar esta refeição (R\$ 2,00). Deseja recarregar sua carteirinha agora?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar', style: TextStyle(color: AppColors.textoSecundario))
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.azulUerj, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            onPressed: () {
+              Navigator.pop(context); // Fecha o aviso
+              // Redireciona direto para a tela de Recarga Pix
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RecargaScreen()));
+            },
+            child: const Text('Recarregar Pix', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTelaPagamento(String mensagemPagamento, Color corMensagem, double saldoAtual, bool isCotista) {
-    return Column(key: const ValueKey('tela_pagamento'), mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(mensagemPagamento, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: corMensagem), textAlign: TextAlign.center),
-        const SizedBox(height: 5),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.corFundo,
+      appBar: AppBar(
+        backgroundColor: AppColors.azulUerj,
+        title: const Text('Pagar Bandejão', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: AppColors.azulUerj.withOpacity(0.2), blurRadius: 20, spreadRadius: 5)]),
+                child: Icon(Icons.tap_and_play, size: 100, color: _processando ? Colors.grey : AppColors.azulUerj),
+              ),
+              const SizedBox(height: 40),
+              Text(
+                _processando ? 'Processando pagamento...' : 'Aproxime o celular da catraca\nou clique no botão abaixo',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, color: AppColors.textoSecundario, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 50),
 
-        if (!isCotista)
-          Text("Saldo atual: R\$ ${saldoAtual.toStringAsFixed(2).replaceAll('.', ',')}", style: const TextStyle(fontSize: 16, color: AppColors.textoSecundario, fontWeight: FontWeight.bold)),
-
-        const Divider(height: 40, thickness: 1),
-        const Text('Aproxime o celular da catraca', style: TextStyle(color: AppColors.textoPrimario, fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        GestureDetector(onTap: _simularPagamentoNfc, child: Container(padding: const EdgeInsets.all(30), decoration: BoxDecoration(color: AppColors.azulUerj.withOpacity(0.1), shape: BoxShape.circle,), child: const Icon(Icons.contactless, size: 80, color: AppColors.azulUerj),),
+              // O Botão que aciona a catraca simulada
+              SizedBox(
+                width: double.infinity, height: 55,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.azulUerj, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  onPressed: _processando ? null : _simularPagamento,
+                  child: _processando
+                      ? const SizedBox(width: 25, height: 25, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                      : const Text('SIMULAR APROXIMAÇÃO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 30),
-        const Text('OU', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 20),
-        const Text('Use o QR Code no leitor óptico', style: TextStyle(color: AppColors.textoSecundario, fontSize: 14)),
-        const SizedBox(height: 10),
-        QrImageView(data: dadosQrCode, version: QrVersions.auto, size: 120.0, foregroundColor: AppColors.textoPrimario),
-        const SizedBox(height: 10),
-        Text('Atualiza em: ${tempoRestante}s', style: TextStyle(color: tempoRestante <= 5 ? AppColors.vermelhoUerj : AppColors.douradoUerj, fontSize: 14, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildTelaSucesso() {
-    return Column(key: const ValueKey('tela_sucesso'), mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 40),
-        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle), child: const Icon(Icons.check_circle, size: 100, color: Colors.green),),
-        const SizedBox(height: 20),
-        const Text('Catraca Liberada!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green)),
-        const SizedBox(height: 10),
-        if (!AppData.instance.isCotista) const Text('- RS 2,00', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.vermelhoUerj)),
-        const SizedBox(height: 40),
-      ],
+      ),
     );
   }
 }
