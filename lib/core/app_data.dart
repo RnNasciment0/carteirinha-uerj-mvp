@@ -69,7 +69,8 @@ class AppData {
   static const String keyTransacoes = 'uerj_transacoes';
   static const String keyNotificacoes = 'uerj_notificacoes';
   static const String keyFoto = 'uerj_foto_perfil';
-  static const String keyUltimaMatricula = 'uerj_ultima_matricula'; // --- NOVA CHAVE ---
+  static const String keyUltimaMatricula = 'uerj_ultima_matricula';
+  static const String keySessaoAtiva = 'uerj_sessao_ativa'; // --- NOVA CHAVE: SESSÃO ---
 
   String nomeAluno = '';
   String matricula = '';
@@ -79,7 +80,7 @@ class AppData {
   String? caminhoFotoCustomizada;
   bool isCotista = false;
 
-  String? ultimaMatriculaLogada; // --- MEMÓRIA DE QUEM USOU O APP POR ÚLTIMO ---
+  String? ultimaMatriculaLogada;
 
   double saldo = 0.0;
   List<Transacao> transacoes = [];
@@ -90,15 +91,24 @@ class AppData {
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    // Assim que o app abre (antes de desenhar a tela), ele lembra de quem foi o último a entrar
     ultimaMatriculaLogada = _prefs!.getString(keyUltimaMatricula);
   }
 
-  // Função interna para gravar a matrícula no disco
+  // --- NOVA FUNÇÃO: VERIFICA SE A SESSÃO ESTÁ ATIVA ---
+  bool get isSessaoAtiva => _prefs?.getBool(keySessaoAtiva) ?? false;
+
+  // --- NOVA FUNÇÃO: FAZ O LOGOUT LIMPANDO A SESSÃO ---
+  Future<void> fazerLogout() async {
+    if (_prefs != null) {
+      await _prefs!.setBool(keySessaoAtiva, false);
+    }
+  }
+
   Future<void> _registrarUltimoAcesso(String matriculaLogada) async {
     ultimaMatriculaLogada = matriculaLogada;
     if (_prefs != null) {
       await _prefs!.setString(keyUltimaMatricula, matriculaLogada);
+      await _prefs!.setBool(keySessaoAtiva, true); // --- MARCA QUE O USUÁRIO ESTÁ LOGADO ---
     }
   }
 
@@ -112,7 +122,7 @@ class AppData {
       isCotista = false;
 
       _carregarDadosPersistidos(15.50);
-      _registrarUltimoAcesso(matriculaRenan); // --- SALVA O ACESSO DO RENAN ---
+      _registrarUltimoAcesso(matriculaRenan);
       return true;
 
     } else if (matriculaDigitada == matriculaMaria) {
@@ -122,7 +132,7 @@ class AppData {
       isCotista = true;
 
       _carregarDadosPersistidos(0.00);
-      _registrarUltimoAcesso(matriculaMaria); // --- SALVA O ACESSO DA MARIA ---
+      _registrarUltimoAcesso(matriculaMaria);
       return true;
     }
     return false;
@@ -196,20 +206,17 @@ class AppData {
     _salvarDadosNoDisco();
   }
 
-  // --- CORREÇÃO: AGORA RETORNA TRUE (SUCESSO) OU FALSE (SALDO INSUFICIENTE) ---
   bool registrarPagamento() {
     if (!isCotista) {
-      // Verifica se o aluno tem pelo menos R$ 2,00
       if (saldo >= 2.00) {
         saldo -= 2.00;
         transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão', valor: 2.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
         _salvarDadosNoDisco();
-        return true; // Pagamento aprovado!
+        return true;
       } else {
-        return false; // Pagamento negado por falta de saldo!
+        return false;
       }
     } else {
-      // Bolsista/Cotista tem refeição subsidiada (R$ 0,00), então sempre aprova
       transacoes.insert(0, Transacao(descricao: 'Refeição - Bandejão (Bolsista)', valor: 0.00, data: DateTime.now(), ehSaida: true, icone: Icons.contactless));
       _salvarDadosNoDisco();
       return true;

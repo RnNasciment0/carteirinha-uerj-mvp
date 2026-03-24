@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/app_data.dart';
 import 'login_screen.dart';
+import '../../home/screens/home_screen.dart'; // Importamos a Home para pular direto para lá
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,33 +12,51 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  double _opacidade = 0.0; // Começa invisível para a animação
+  double _opacidade = 0.0;
 
   @override
   void initState() {
     super.initState();
     _iniciarAnimacao();
-    _navegarParaLogin();
+    _verificarSessaoENavegar(); // --- CHAMADA DA NOVA LÓGICA MÁGICA ---
   }
 
-  // Função que faz a logo aparecer suavemente (Fade-In)
   void _iniciarAnimacao() {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
-          _opacidade = 1.0; // Fica totalmente visível
+          _opacidade = 1.0;
         });
       }
     });
   }
 
-  // Função que espera 3 segundos e vai para a tela de Login
-  void _navegarParaLogin() {
+  // --- O CÉREBRO DA NAVEGAÇÃO ---
+  void _verificarSessaoENavegar() {
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
+      if (!mounted) return;
+
+      // Pergunta pro AppData: "Alguém deixou o app logado?"
+      bool sessaoAtiva = AppData.instance.isSessaoAtiva;
+      String? ultimaMatricula = AppData.instance.ultimaMatriculaLogada;
+
+      if (sessaoAtiva && ultimaMatricula != null) {
+        // Se sim, faz um "Login Silencioso" e pula pra Home!
+        AppData.instance.realizarLogin(ultimaMatricula);
         Navigator.pushReplacement(
           context,
-          // Transição de página suave (FadeTransition) para o Login
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      } else {
+        // Se não (fez logout ou primeira vez), vai pra tela de Login
+        Navigator.pushReplacement(
+          context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -52,44 +72,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Fundo Azul Vibrante da UERJ
       backgroundColor: AppColors.azulUerj,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Container Animado para o Fade-In da logo
             AnimatedOpacity(
               opacity: _opacidade,
-              duration: const Duration(milliseconds: 1500), // Duração do Fade-In
+              duration: const Duration(milliseconds: 1500),
               curve: Curves.easeIn,
               child: Image.asset(
-                'assets/images/uerjLogoSplash.jpg', // Puxa a logo da UERJ
-                height: 150, // Altura maior na Splash
-                // errorBuilder: caso a imagem não carregue, mostra um ícone genérico
+                'assets/images/uerj_logo.png',
+                height: 150,
                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.account_balance, size: 100, color: Colors.white),
               ),
             ),
             const SizedBox(height: 30),
-            // Texto de Carregando (pode ser o nome do app ou da UERJ)
-            const Text(
-              'Carteirinha Digital UERJ',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
+            const Text('Carteirinha Digital UERJ', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
             const SizedBox(height: 10),
-            const Text(
-              'Carregando dados...',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+            const Text('Carregando dados...', style: TextStyle(color: Colors.white70, fontSize: 14, fontStyle: FontStyle.italic)),
           ],
         ),
       ),
