@@ -33,18 +33,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _fazerLoginComBiometria() async {
+    // --- VERIFICAÇÃO INTELIGENTE ANTES DE ABRIR O SENSOR ---
+    String? ultimaMatricula = AppData.instance.ultimaMatriculaLogada;
+
+    if (ultimaMatricula == null || ultimaMatricula.isEmpty) {
+      // Se não há memória de ninguém no disco, bloqueia a biometria
+      setState(() {
+        _mensagemErro = 'Nenhuma conta vinculada.\nFaça o login com matrícula e senha pela primeira vez para ativar a biometria.';
+      });
+      return;
+    }
+
     bool autenticado = false;
 
     try {
       final bool podeAutenticar = await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
 
       if (podeAutenticar) {
-        // CORREÇÃO PARA LOCAL_AUTH 3.0.1:
-        // Passamos os parâmetros diretamente, sem o 'options'
         autenticado = await _auth.authenticate(
           localizedReason: 'Toque no sensor para acessar sua Carteirinha Digital',
           biometricOnly: false,
-          persistAcrossBackgrounding: true, // Substitui o stickyAuth
+          persistAcrossBackgrounding: true,
         );
       } else {
         setState(() { _mensagemErro = 'Biometria não disponível neste dispositivo.'; });
@@ -57,8 +66,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (autenticado && mounted) {
-      AppData.instance.realizarLogin(AppData.matriculaRenan);
-      _navegarParaHome();
+      // --- LOGIN DINÂMICO USANDO A ÚLTIMA MATRÍCULA SALVA NO DISCO ---
+      if (AppData.instance.realizarLogin(ultimaMatricula)) {
+        _navegarParaHome();
+      } else {
+        setState(() { _mensagemErro = 'Erro ao carregar a conta vinculada.'; });
+      }
     }
   }
 
@@ -86,14 +99,12 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // --- ALTERAÇÃO AQUI: ÍCONE PELO LOGO ---
               Image.asset(
-                'assets/images/uerj_logo.png', // Puxa a logo da UERJ
-                height: 120, // Altura maior para dar destaque
-                // errorBuilder: caso a imagem não carregue, mostra um ícone genérico
+                'assets/images/uerj_logo.png',
+                height: 120,
                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.account_balance, size: 100, color: AppColors.azulUerj),
               ),
-              const SizedBox(height: 30), // Mais espaço abaixo da logo
+              const SizedBox(height: 30),
               const Text('Acesso Aluno UERJ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.azulUerj)),
               const SizedBox(height: 40),
 
@@ -122,7 +133,6 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 10),
 
               if (_mensagemErro.isNotEmpty)
-              // --- ALTERAÇÃO AQUI: TEXTO DE ERRO CENTRALIZADO ---
                 Text(_mensagemErro, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
 
               const SizedBox(height: 24),

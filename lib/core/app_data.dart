@@ -69,6 +69,7 @@ class AppData {
   static const String keyTransacoes = 'uerj_transacoes';
   static const String keyNotificacoes = 'uerj_notificacoes';
   static const String keyFoto = 'uerj_foto_perfil';
+  static const String keyUltimaMatricula = 'uerj_ultima_matricula'; // --- NOVA CHAVE ---
 
   String nomeAluno = '';
   String matricula = '';
@@ -77,6 +78,8 @@ class AppData {
   String foto = 'assets/images/profile_placeholder.png';
   String? caminhoFotoCustomizada;
   bool isCotista = false;
+
+  String? ultimaMatriculaLogada; // --- MEMÓRIA DE QUEM USOU O APP POR ÚLTIMO ---
 
   double saldo = 0.0;
   List<Transacao> transacoes = [];
@@ -87,10 +90,19 @@ class AppData {
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // Assim que o app abre (antes de desenhar a tela), ele lembra de quem foi o último a entrar
+    ultimaMatriculaLogada = _prefs!.getString(keyUltimaMatricula);
+  }
+
+  // Função interna para gravar a matrícula no disco
+  Future<void> _registrarUltimoAcesso(String matriculaLogada) async {
+    ultimaMatriculaLogada = matriculaLogada;
+    if (_prefs != null) {
+      await _prefs!.setString(keyUltimaMatricula, matriculaLogada);
+    }
   }
 
   bool realizarLogin(String matriculaDigitada) {
-    // --- CORREÇÃO 1: LIMPA A FOTO DA MEMÓRIA ANTES DE CARREGAR O NOVO USUÁRIO ---
     caminhoFotoCustomizada = null;
 
     if (matriculaDigitada == matriculaRenan) {
@@ -98,7 +110,9 @@ class AppData {
       matricula = matriculaRenan;
       curso = 'Ciência da Computação';
       isCotista = false;
+
       _carregarDadosPersistidos(15.50);
+      _registrarUltimoAcesso(matriculaRenan); // --- SALVA O ACESSO DO RENAN ---
       return true;
 
     } else if (matriculaDigitada == matriculaMaria) {
@@ -106,7 +120,9 @@ class AppData {
       matricula = matriculaMaria;
       curso = 'Direito';
       isCotista = true;
+
       _carregarDadosPersistidos(0.00);
+      _registrarUltimoAcesso(matriculaMaria); // --- SALVA O ACESSO DA MARIA ---
       return true;
     }
     return false;
@@ -115,9 +131,7 @@ class AppData {
   void _carregarDadosPersistidos(double saldoInicialMock) {
     if (_prefs == null) return;
 
-    // --- CORREÇÃO 2: USA A MATRÍCULA NO FINAL DA CHAVE PARA ISOLAR OS DADOS ---
     caminhoFotoCustomizada = _prefs!.getString('${keyFoto}_$matricula');
-
     saldo = _prefs!.getDouble('${keySaldo}_$matricula') ?? saldoInicialMock;
 
     String? transacoesJson = _prefs!.getString('${keyTransacoes}_$matricula');
@@ -148,11 +162,10 @@ class AppData {
   Future<void> _salvarDadosNoDisco() async {
     if (_prefs == null) return;
 
-    // --- CORREÇÃO 3: SALVA OS DADOS COM A CHAVE ESPECÍFICA DO USUÁRIO LOGADO ---
     if (caminhoFotoCustomizada != null) {
       await _prefs!.setString('${keyFoto}_$matricula', caminhoFotoCustomizada!);
     } else {
-      await _prefs!.remove('${keyFoto}_$matricula'); // Remove se o usuário não tiver foto
+      await _prefs!.remove('${keyFoto}_$matricula');
     }
 
     await _prefs!.setDouble('${keySaldo}_$matricula', saldo);
